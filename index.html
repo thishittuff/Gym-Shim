@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Workout Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f9f9f9 0%, #0f0000 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #580000 0%, #000000 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #580000 0%, #000000 100%);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .day-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .day-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .day-btn.active {
+            background: linear-gradient(135deg, #580000 0%, #000000 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgb(255, 255, 255);
+        }
+
+        .workout-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgb(255, 255, 255);
+            margin-bottom: 20px;
+        }
+
+        .exercise-group {
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .muscle-header {
+            background: linear-gradient(135deg, #580000 0%, #000000 100%);
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .exercise-item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            background: #fafafa;
+        }
+
+        .exercise-item:last-child {
+            border-bottom: none;
+        }
+
+        .exercise-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .exercise-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+            flex: 1;
+        }
+
+        .exercise-details {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .set-tracker {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .set-number {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 60px;
+        }
+
+        .set-inputs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .input-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .set-input {
+            width: 70px;
+            padding: 8px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            transition: border-color 0.3s ease;
+        }
+
+        .set-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .set-input.completed {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .set-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .complete-btn {
+            padding: 8px 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .complete-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .complete-btn.completed {
+            background: #6c757d;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #580000 0%, #000000 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stats-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #580000 0%, #000000 100%);
+            transition: width 0.3s ease;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.05) 100%);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+
+        .status.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+
+        .no-data {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+
+            .day-selector {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+
+            .day-btn {
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .set-tracker {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .set-inputs {
+                justify-content: center;
+            }
+
+            .controls {
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💪 Gym Workout Tracker</h1>
+            <p>Track your sets, reps, and weights</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('workout')">🏋️ Workout</button>
+            <button class="tab" onclick="switchTab('progress')">📊 Progress</button>
+            <button class="tab" onclick="switchTab('setup')">⚙️ Setup</button>
+        </div>
+
+        <div id="workout-tab" class="tab-content active">
+            <div class="day-selector">
+                <button class="day-btn active" onclick="selectDay('MON')">MON</button>
+                <button class="day-btn" onclick="selectDay('TUE')">TUE</button>
+                <button class="day-btn" onclick="selectDay('WED')">WED</button>
+                <button class="day-btn" onclick="selectDay('THU')">THU</button>
+                <button class="day-btn" onclick="selectDay('FRI')">FRI</button>
+                <button class="day-btn" onclick="selectDay('SAT')">SAT</button>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="startWorkout()">🏃 Start Workout</button>
+                <button class="btn secondary" onclick="resetDay()">🔄 Reset Day</button>
+                <button class="btn secondary" onclick="saveWorkout()">💾 Save Progress</button>
+            </div>
+
+            <div id="workout-content"></div>
+        </div>
+
+        <div id="progress-tab" class="tab-content">
+            <div class="stats-container">
+                <h3 style="margin-bottom: 20px; text-align: center;">📈 Workout Statistics</h3>
+                <div class="stats-grid" id="stats-grid"></div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="exportProgress()">📤 Export Data</button>
+                <button class="btn secondary" onclick="document.getElementById('progressInput').click()">📥 Import Data</button>
+                <button class="btn danger" onclick="clearAllProgress()">🗑️ Clear All</button>
+                <input type="file" id="progressInput" class="file-input" accept=".json" onchange="importProgress(event)">
+            </div>
+
+            <div id="progress-history"></div>
+        </div>
+
+        <div id="setup-tab" class="tab-content">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div style="font-size: 3rem; color: #667eea; margin-bottom: 15px;">📁</div>
+                <h3>Upload Workout Plan</h3>
+                <p>Upload your Excel workout plan to get started</p>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(event)">
+            </div>
+
+            <div id="file-status"></div>
+
+            <div class="controls">
+                <button class="btn" onclick="loadDefaultWorkout()">📋 Load Default Plan</button>
+                <button class="btn secondary" onclick="clearWorkoutPlan()">🗑️ Clear Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let workoutPlan = {};
+        let workoutProgress = {};
+        let currentDay = 'MON';
+        let currentWorkoutDate = null;
+
+        // Default workout plan based on your Excel data
+        const defaultWorkoutPlan = {
+            'MON': [
+                {muscle: 'Leg', exercise: 'Leg Extension', sets: 5, reps: '20–25, 30', rpe: '8–9', notes: 'Last set 30 reps, focus on squeeze'},
+                {muscle: 'Leg', exercise: 'Leg Curl', sets: 5, reps: '20, 30', rpe: '7–8', notes: 'Last set 30 reps, slow eccentric'},
+                {muscle: 'Leg', exercise: 'Barbell Squat', sets: 5, reps: '15–20', rpe: '7–8', notes: 'Narrow stance, PR every 3 weeks'},
+                {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', notes: 'Controlled tempo, full ROM'},
+                {muscle: 'Bicep', exercise: 'Spider Curls', sets: 3, reps: '8,10,8', rpe: '7–8', notes: 'Flat Bench Laying down'},
+                {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', notes: 'Partials at end, both arms'},
+                {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', notes: 'Keep elbows stable'},
+                {muscle: 'Bicep', exercise: 'Single-Handed Cable Pull', sets: 3, reps: '6,8,6', rpe: '7–9', notes: 'Focus on Strech part'},
+                {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', notes: 'Elbow eye level'}
+            ],
+            'TUE': [
+                {muscle: 'Chest', exercise: 'Incline Barbell Bench Press', sets: 6, reps: '15', rpe: '8', notes: 'Focus on upper chest, added sets'},
+                {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', notes: 'Emphasize stretch, slow eccentric'},
+                {muscle: 'Chest', exercise: 'Pec Fly/Cable Fly', sets: 3, reps: '15', rpe: '7–8', notes: 'Controlled, full ROM'},
+                {muscle: 'Shoulder', exercise: 'Single-Handed Cable Lateral', sets: 3, reps: 'To failure', rpe: '9', notes: 'Partials at end, controlled'},
+                {muscle: 'Shoulder', exercise: 'Seated Rear Delt Extension', sets: 3, reps: '10', rpe: '7–8', notes: 'Focus on rear delts, strict form'}
+            ],
+            'WED': [
+                {muscle: 'Back', exercise: 'Lat Pulldown', sets: 4, reps: '15', rpe: '7–8', notes: 'Alternate between Wide and Narrow Grip'},
+                {muscle: 'Back', exercise: 'Cable Rowing', sets: 3, reps: '15-20', rpe: '7–8', notes: 'Full Stretch of Lats and Elbow drive'},
+                {muscle: 'Back', exercise: 'Bent Barbell Rows', sets: 5, reps: 'To failure', rpe: '9', notes: 'Partials at end, added sets'},
+                {muscle: 'Back', exercise: 'Lat Prayer', sets: 3, reps: '15', rpe: '7–8', notes: 'Last set partials, controlled'},
+                {muscle: 'Bicep', exercise: 'Barbell Curl', sets: 5, reps: '15', rpe: '7–8', notes: 'Focus on Negatives'},
+                {muscle: 'Bicep', exercise: 'Single-Handed Cable Curl', sets: 3, reps: '10', rpe: '9', notes: 'Partials at end, both arms'},
+                {muscle: 'Bicep', exercise: 'Double Handed Cable Curl', sets: 3, reps: '15', rpe: '7–8', notes: 'Strict form, full ROM'}
+            ],
+            'THU': [
+                {muscle: 'Core', exercise: 'Elevated Double Knee Tuck', sets: 8, reps: '30', rpe: '7–8', notes: 'Rest lats on bench, core focus'},
+                {muscle: 'Core', exercise: 'Declined Crunches', sets: 4, reps: '20', rpe: '7–8', notes: 'Slow eccentric, full contraction'},
+                {muscle: 'Core', exercise: 'Hanging Knee Raises (Side)', sets: 6, reps: '10', rpe: '7–8', notes: 'NA'},
+                {muscle: 'Calves', exercise: 'Standing Barbell Calf Raise', sets: 7, reps: '10–20', rpe: '7–8', notes: 'NA'},
+                {muscle: 'Calves', exercise: 'Seated Calf Raise', sets: 7, reps: '15–20', rpe: '7–8', notes: 'Added exercise for volume'}
+            ],
+            'FRI': [
+                {muscle: 'Chest', exercise: 'Flat Barbell Bench Press', sets: 6, reps: '15', rpe: '8–9', notes: 'PR every 3 weeks, added sets'},
+                {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', notes: 'Focus on stretch'},
+                {muscle: 'Chest', exercise: 'Pec Fly', sets: 3, reps: '15', rpe: '7–8', notes: 'Controlled, full ROM'},
+                {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', notes: 'Controlled tempo'},
+                {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', notes: 'Partials at end, both arms'},
+                {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', notes: 'Keep elbows stable'},
+                {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', notes: 'Strict form, full ROM'},
+                {muscle: 'Shoulder', exercise: 'Shoulder Press (Machine/DB)', sets: 3, reps: '10–12', rpe: '7–8', notes: 'Focus on anterior delts'}
+            ],
+            'SAT': [
+                {muscle: 'Back', exercise: 'Lat Pulldown', sets: 4, reps: '15', rpe: '7–8', notes: 'Added set, wide grip'},
+                {muscle: 'Back', exercise: 'Bent Barbell Rows', sets: 5, reps: 'To failure', rpe: '9', notes: 'Partials at end, added sets'},
+                {muscle: 'Back', exercise: 'Lat Prayer', sets: 3, reps: '15', rpe: '7–8', notes: 'Last set partials, controlled'},
+                {muscle: 'Back', exercise: 'Lower Partial Deadlifts', sets: 1, reps: 'To failure', rpe: '9', notes: 'High reps'},
+                {muscle: 'Back', exercise: 'Deadlift', sets: 1, reps: '1', rpe: '10', notes: 'PR every 3–4 weeks'},
+                {muscle: 'Bicep', exercise: 'Barbell Curl', sets: 5, reps: '15', rpe: '7–8', notes: 'Focus on contraction'},
+                {muscle: 'Bicep', exercise: 'Single-Handed Cable Curl', sets: 3, reps: '10', rpe: '9', notes: 'Partials at end, both arms'},
+                {muscle: 'Bicep', exercise: 'Preacher Curl', sets: 3, reps: '15', rpe: '7–8', notes: 'Strict form, full ROM'}
+            ]
+        };
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'progress') {
+                updateProgressStats();
+            }
+        }
+
+        function selectDay(day) {
+            currentDay = day;
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            displayWorkout();
+        }
+
+        function loadDefaultWorkout() {
+            workoutPlan = JSON.parse(JSON.stringify(defaultWorkoutPlan));
+            showStatus('✅ Default workout plan loaded!', 'success');
+            displayWorkout();
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        parseWorkoutData(jsonData);
+                        showStatus('✅ Workout plan uploaded successfully!', 'success');
+                        displayWorkout();
+                        
+                    } catch (error) {
+                        showStatus('❌ Error reading file. Please make sure it\'s a valid Excel file.', 'error');
+                    }
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function parseWorkoutData(data) {
+            workoutPlan = {};
+            let currentDay = '';
+            
+            data.forEach(row => {
+                if (row.Day && ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].includes(row.Day)) {
+                    currentDay = row.Day;
+                    if (!workoutPlan[currentDay]) {
+                        workoutPlan[currentDay] = [];
+                    }
+                }
+                
+                if (currentDay && row.Exercise) {
+                    workoutPlan[currentDay].push({
+                        muscle: row.Muscle || '',
+                        exercise: row.Exercise,
+                        sets: parseInt(row.Sets) || 3,
+                        reps: row.Reps || '10',
+                        rpe: row.RPE || '7-8',
+                        notes: row.Notes || ''
+                    });
+                }
+            });
+        }
+
+        function displayWorkout() {
+            const container = document.getElementById('workout-content');
+            
+            if (!workoutPlan[currentDay] || workoutPlan[currentDay].length === 0) {
+                container.innerHTML = '<div class="no-data">No workout plan for ' + currentDay + '. Upload a plan or load the default.</div>';
+                return;
+            }
+
+            let html = '';
+            const exercises = workoutPlan[currentDay];
+            const groupedExercises = groupByMuscle(exercises);
+
+            Object.keys(groupedExercises).forEach(muscle => {
+                html += `<div class="exercise-group">
+                    <div class="muscle-header">💪 ${muscle}</div>`;
+                
+                groupedExercises[muscle].forEach((exercise, exerciseIndex) => {
+                    const exerciseKey = `${currentDay}-${muscle}-${exerciseIndex}`;
+                    const progress = workoutProgress[exerciseKey] || {};
+                    
+                    html += `<div class="exercise-item">
+                        <div class="exercise-header">
+                            <div class="exercise-name">${exercise.exercise}</div>
+                        </div>
+                        <div class="exercise-details">
+                            Target: ${exercise.sets} sets × ${exercise.reps} reps | RPE: ${exercise.rpe}
+                            ${exercise.notes ? '<br>Notes: ' + exercise.notes : ''}
+                        </div>`;
+                    
+                    for (let setNum = 1; setNum <= exercise.sets; setNum++) {
+                        const setData = progress[`set${setNum}`] || {};
+                        const isCompleted = setData.completed || false;
+                        
+                        html += `<div class="set-tracker">
+                            <div class="set-number">Set ${setNum}</div>
+                            <div class="set-inputs">
+                                <div class="input-group">
+                                    <div class="input-label">Reps</div>
+                                    <input type="number" class="set-input ${isCompleted ? 'completed' : ''}" 
+                                           value="${setData.reps || ''}" 
+                                           onchange="updateSet('${exerciseKey}', ${setNum}, 'reps', this.value)">
+                                </div>
+                                <div class="input-group">
+                                    <div class="input-label">Weight</div>
+                                    <input type="number" step="0.5" class="set-input ${isCompleted ? 'completed' : ''}" 
+                                           value="${setData.weight || ''}" 
+                                           onchange="updateSet('${exerciseKey}', ${setNum}, 'weight', this.value)">
+                                </div>
+                                <div class="input-group">
+                                    <div class="input-label">RPE</div>
+                                    <input type="number" min="1" max="10" class="set-input ${isCompleted ? 'completed' : ''}" 
+                                           value="${setData.rpe || ''}" 
+                                           onchange="updateSet('${exerciseKey}', ${setNum}, 'rpe', this.value)">
+                                </div>
+                            </div>
+                            <div class="set-status">
+                                <button class="complete-btn ${isCompleted ? 'completed' : ''}" 
+                                        onclick="toggleSetComplete('${exerciseKey}', ${setNum})">
+                                    ${isCompleted ? '✓' : '○'}
+                                </button>
+                            </div>
+                        </div>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+                
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function groupByMuscle(exercises) {
+            const grouped = {};
+            exercises.forEach(exercise => {
+                if (!grouped[exercise.muscle]) {
+                    grouped[exercise.muscle] = [];
+                }
+                grouped[exercise.muscle].push(exercise);
+            });
+            return grouped;
+        }
+
+        function updateSet(exerciseKey, setNum, field, value) {
+            if (!workoutProgress[exerciseKey]) {
+                workoutProgress[exerciseKey] = {};
+            }
+            if (!workoutProgress[exerciseKey][`set${setNum}`]) {
+                workoutProgress[exerciseKey][`set${setNum}`] = {};
+            }
+            
+            workoutProgress[exerciseKey][`set${setNum}`][field] = value;
+        }
+
+        function toggleSetComplete(exerciseKey, setNum) {
+            if (!workoutProgress[exerciseKey]) {
+                workoutProgress[exerciseKey] = {};
+            }
+            if (!workoutProgress[exerciseKey][`set${setNum}`]) {
+                workoutProgress[exerciseKey][`set${setNum}`] = {};
+            }
+            
+            const isCompleted = workoutProgress[exerciseKey][`set${setNum}`].completed || false;
+            workoutProgress[exerciseKey][`set${setNum}`].completed = !isCompleted;
+            
+            displayWorkout();
+        }
+
+        function startWorkout() {
+            currentWorkoutDate = new Date().toISOString().split('T')[0];
+            showStatus('🏃 Workout started! Track your sets and weights.', 'success');
+        }
+
+        function resetDay() {
+            if (confirm('Are you sure you want to reset all progress for ' + currentDay + '?')) {
+                const exercises = workoutPlan[currentDay] || [];
+                exercises.forEach((exercise, exerciseIndex) => {
+                    const exerciseKey = `${currentDay}-${exercise.muscle}-${exerciseIndex}`;
+                    delete workoutProgress[exerciseKey];
+                });
+                displayWorkout();
+                showStatus('🔄 ' + currentDay + ' workout reset!', 'success');
+            }
+        }
+
+        function saveWorkout() {
+            const workoutData = {
+                date: currentWorkoutDate || new Date().toISOString().split('T')[0],
+                day: currentDay,
+                progress: JSON.parse(JSON.stringify(workoutProgress))
+            };
+            
+            const dataStr = JSON.stringify(workoutData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `workout-${workoutData.date}-${currentDay}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('💾 Workout saved to downloads!', 'success');
+        }
+
+        function exportProgress() {
+            const exportData = {
+                workoutPlan: workoutPlan,
+                workoutProgress: workoutProgress,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gym-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('📤 Progress exported successfully!', 'success');
+        }
+
+        function importProgress(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.workoutPlan) workoutPlan = data.workoutPlan;
+                        if (data.workoutProgress) workoutProgress = data.workoutProgress;
+                        
+                        displayWorkout();
+                        updateProgressStats();
+                        showStatus('📥 Progress imported successfully!', 'success');
+                    } catch (error) {
+                        showStatus('❌ Error importing file. Please check the format.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function clearAllProgress() {
+            if (confirm('Are you sure you want to clear ALL workout progress? This cannot be undone.')) {
+                workoutProgress = {};
+                displayWorkout();
+                updateProgressStats();
+                showStatus('🗑️ All progress cleared!', 'success');
+            }
+        }
+
+        function clearWorkoutPlan() {
+            if (confirm('Are you sure you want to clear the workout plan?')) {
+                workoutPlan = {};
+                workoutProgress = {};
+                displayWorkout();
+                showStatus('🗑️ Workout plan cleared!', 'success');
+            }
+        }
+
+        function updateProgressStats() {
+            const statsGrid = document.getElementById('stats-grid');
+            
+            let totalSets = 0;
+            let completedSets = 0;
+            let totalWeight = 0;
+            let workoutDays = new Set();
+            
+            Object.keys(workoutProgress).forEach(exerciseKey => {
+                const dayMatch = exerciseKey.match(/^([A-Z]{3})-/);
+                if (dayMatch) {
+                    workoutDays.add(dayMatch[1]);
+                }
+                
+                const exercise = workoutProgress[exerciseKey];
+                Object.keys(exercise).forEach(setKey => {
+                    if (setKey.startsWith('set')) {
+                        totalSets++;
+                        const setData = exercise[setKey];
+                        if (setData.completed) {
+                            completedSets++;
+                        }
+                        if (setData.weight && setData.reps) {
+                            totalWeight += parseFloat(setData.weight) * parseInt(setData.reps);
+                        }
+                    }
+                });
+            });
+            
+            const completionRate = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${completedSets}</div>
+                    <div class="stat-label">Sets Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalSets}</div>
+                    <div class="stat-label">Total Sets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${completionRate}%</div>
+                    <div class="stat-label">Completion Rate</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${completionRate}%"></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Math.round(totalWeight)}</div>
+                    <div class="stat-label">Total Volume (kg×reps)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${workoutDays.size}</div>
+                    <div class="stat-label">Days Trained</div>
+                </div>
+            `;
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('file-status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDefaultWorkout();
+            displayWorkout();
+            updateProgressStats();
+        });
+    </script>
+</body>
+</html>
