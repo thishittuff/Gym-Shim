@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gym Workout Tracker</title>
+    <link rel="icon" href="data:,">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -146,7 +147,7 @@
 
         .exercise-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
             flex-wrap: wrap;
@@ -424,13 +425,11 @@
             <p>Track your sets, reps, and weights</p>
         </div>
 
-        <div class="tabs">
+        <div class="tabs" id="tabs" style="display:none;">
             <button class="tab active" onclick="switchTab('workout')">🏋️ Workout</button>
-            <button class="tab" onclick="switchTab('progress')">📊 Progress</button>
-            <button class="tab" onclick="switchTab('setup')">⚙️ Setup</button>
         </div>
 
-        <div id="workout-tab" class="tab-content active">
+        <div id="workout-tab" class="tab-content">
             <div class="day-selector">
                 <button class="day-btn active" onclick="selectDay('MON')">MON</button>
                 <button class="day-btn" onclick="selectDay('TUE')">TUE</button>
@@ -439,49 +438,21 @@
                 <button class="day-btn" onclick="selectDay('FRI')">FRI</button>
                 <button class="day-btn" onclick="selectDay('SAT')">SAT</button>
             </div>
-
-            <div class="controls">
-                <button class="btn" onclick="startWorkout()">🏃 Start Workout</button>
-                <button class="btn secondary" onclick="resetDay()">🔄 Reset Day</button>
-                <button class="btn secondary" onclick="saveWorkout()">💾 Save Progress</button>
-            </div>
-
             <div id="workout-content"></div>
         </div>
 
-        <div id="progress-tab" class="tab-content">
-            <div class="stats-container">
-                <h3 style="margin-bottom: 20px; text-align: center;">📈 Workout Statistics</h3>
-                <div class="stats-grid" id="stats-grid"></div>
-            </div>
-
-            <div class="controls">
-                <button class="btn" onclick="exportProgress()">📤 Export Data</button>
-                <button class="btn secondary" onclick="document.getElementById('progressInput').click()">📥 Import Data</button>
-                <button class="btn danger" onclick="clearAllProgress()">🗑️ Clear All</button>
-                <input type="file" id="progressInput" class="file-input" accept=".json" onchange="importProgress(event)">
-            </div>
-
-            <div id="progress-history"></div>
-        </div>
-
-        <div id="setup-tab" class="tab-content">
-            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                <div style="font-size: 3rem; color: #667eea; margin-bottom: 15px;">📁</div>
-                <h3>Upload Workout Plan</h3>
-                <p>Upload your Excel workout plan to get started</p>
-                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(event)">
-            </div>
-
-            <div id="file-status"></div>
-
-            <div class="controls">
-                <button class="btn" onclick="loadDefaultWorkout()">📋 Load Default Plan</button>
-                <button class="btn secondary" onclick="clearWorkoutPlan()">🗑️ Clear Plan</button>
+        <div id="login-tab" class="tab-content active">
+            <div class="login-form">
+                <h2>Login</h2>
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button class="btn" id="login-btn">Login</button>
+                <div id="login-status"></div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="main.js"></script>
 </body>
 </html>
