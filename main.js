@@ -3,7 +3,9 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let currentDay = 'MON';
+// Auto-select current day
+const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+let currentDay = days[new Date().getDay()];
 let workoutPlan = {};  
 let workoutProgress = {};
 
@@ -13,58 +15,58 @@ let hasPreviousWorkout = false; // Track if user has previous workout data
 
 const defaultWorkoutPlan = {
     'MON': [
-        {muscle: 'Leg', exercise: 'Leg Extension', sets: 5, reps: '20–25, 30', rpe: '8–9', notes: 'Last set 30 reps, focus on squeeze'},
-        {muscle: 'Leg', exercise: 'Leg Curl', sets: 5, reps: '20, 30', rpe: '7–8', notes: 'Last set 30 reps, slow eccentric'},
-        {muscle: 'Leg', exercise: 'Barbell Squat', sets: 5, reps: '15–20', rpe: '7–8', notes: 'Narrow stance, PR every 3 weeks'},
-        {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', notes: 'Controlled tempo, full ROM'},
-        {muscle: 'Bicep', exercise: 'Spider Curls', sets: 3, reps: '8,10,8', rpe: '7–8', notes: 'Flat Bench Laying down'},
-        {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', notes: 'Partials at end, both arms'},
-        {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', notes: 'Keep elbows stable'},
-        {muscle: 'Bicep', exercise: 'Single-Handed Cable Pull', sets: 3, reps: '6,8,6', rpe: '7–9', notes: 'Focus on Strech part'},
-        {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', notes: 'Elbow eye level'}
+        {muscle: 'Leg', exercise: 'Leg Extension', sets: 5, reps: '20–25, 30', rpe: '8–9', description: 'Last set 30 reps, focus on squeeze', ref : ''},
+        {muscle: 'Leg', exercise: 'Leg Curl', sets: 5, reps: '20, 30', rpe: '7–8', description: 'Last set 30 reps, slow eccentric', ref : ''},
+        {muscle: 'Leg', exercise: 'Barbell Squat', sets: 5, reps: '15–20', rpe: '7–8', description: 'Narrow stance, PR every 3 weeks', ref : ''},
+        {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', description: 'Controlled tempo, full ROM', ref : ''},
+        {muscle: 'Bicep', exercise: 'Spider Curls', sets: 3, reps: '8,10,8', rpe: '7–8', description: 'Flat Bench Laying down', ref : ''},
+        {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', description: 'Partials at end, both arms', ref : ''},
+        {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', description: 'Keep elbows stable', ref : ''},
+        {muscle: 'Bicep', exercise: 'Single-Handed Cable Pull', sets: 3, reps: '6,8,6', rpe: '7–9', description: 'Focus on Strech part', ref : ''},
+        {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', description: 'Elbow eye level', ref : ''}
     ],
     'TUE': [
-        {muscle: 'Chest', exercise: 'Incline Barbell Bench Press', sets: 6, reps: '15', rpe: '8', notes: 'Focus on upper chest, added sets'},
-        {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', notes: 'Emphasize stretch, slow eccentric'},
-        {muscle: 'Chest', exercise: 'Pec Fly/Cable Fly', sets: 3, reps: '15', rpe: '7–8', notes: 'Controlled, full ROM'},
-        {muscle: 'Shoulder', exercise: 'Single-Handed Cable Lateral', sets: 3, reps: 'To failure', rpe: '9', notes: 'Partials at end, controlled'},
-        {muscle: 'Shoulder', exercise: 'Seated Rear Delt Extension', sets: 3, reps: '10', rpe: '7–8', notes: 'Focus on rear delts, strict form'}
+        {muscle: 'Chest', exercise: 'Incline Barbell Bench Press', sets: 6, reps: '15', rpe: '8', description: 'Focus on upper chest, added sets', ref : ''},
+        {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', description: 'Emphasize stretch, slow eccentric', ref : ''},
+        {muscle: 'Chest', exercise: 'Pec Fly/Cable Fly', sets: 3, reps: '15', rpe: '7–8', description: 'Controlled, full ROM', ref : ''},
+        {muscle: 'Shoulder', exercise: 'Single-Handed Cable Lateral', sets: 3, reps: 'To failure', rpe: '9', description: 'Partials at end, controlled', ref : ''},
+        {muscle: 'Shoulder', exercise: 'Seated Rear Delt Extension', sets: 3, reps: '10', rpe: '7–8', description: 'Focus on rear delts, strict form', ref : ''}
     ],
     'WED': [
-        {muscle: 'Back', exercise: 'Lat Pulldown', sets: 4, reps: '15', rpe: '7–8', notes: 'Alternate between Wide and Narrow Grip'},
-        {muscle: 'Back', exercise: 'Cable Rowing', sets: 3, reps: '15-20', rpe: '7–8', notes: 'Full Stretch of Lats and Elbow drive'},
-        {muscle: 'Back', exercise: 'Bent Barbell Rows', sets: 5, reps: 'To failure', rpe: '9', notes: 'Partials at end, added sets'},
-        {muscle: 'Back', exercise: 'Lat Prayer', sets: 3, reps: '15', rpe: '7–8', notes: 'Last set partials, controlled'},
-        {muscle: 'Bicep', exercise: 'Barbell Curl', sets: 5, reps: '15', rpe: '7–8', notes: 'Focus on Negatives'},
-        {muscle: 'Bicep', exercise: 'Single-Handed Cable Curl', sets: 3, reps: '10', rpe: '9', notes: 'Partials at end, both arms'},
-        {muscle: 'Bicep', exercise: 'Double Handed Cable Curl', sets: 3, reps: '15', rpe: '7–8', notes: 'Strict form, full ROM'}
+        {muscle: 'Back', exercise: 'Lat Pulldown', sets: 4, reps: '15', rpe: '7–8', description: 'Alternate between Wide and Narrow Grip', ref : ''},
+        {muscle: 'Back', exercise: 'Cable Row (Lat-Focused)', sets: 3, reps: '15-20', rpe: '7–8', description: 'Perform seated rows by pulling the handle towards the lower abdomen/hips, keeping elbows close to the body, and minimizing biceps and trapezius involvement for maximum lat engagement.', ref : 'https://pyuqhcptlcbxwohevvvv.supabase.co/storage/v1/object/public/workoutvideos/back/Back%20-%20Cable%20Seated%20Row%20(Lat-Focused)%20-%20Made%20with%20Clipchamp.mp4'},
+        {muscle: 'Back', exercise: 'Incline Bench Shrug', sets: 4, reps: '5-8', rpe: '7-8', description: 'Lying face down on an incline bench, shrug shoulders upwards, focusing on squeezing the shoulder blades to activate the mid and lower traps.', ref : 'https://pyuqhcptlcbxwohevvvv.supabase.co/storage/v1/object/public/workoutvideos/back/Back%20-%20Incline%20Bench%20Shrug%20-%20Made%20with%20Clipchamp.mp4'},
+        {muscle: 'Back', exercise: 'Lat Prayer', sets: 3, reps: '15', rpe: '7–8', description: 'Last set partials, controlled', ref : ''},
+        {muscle: 'Bicep', exercise: 'Barbell Curl', sets: 5, reps: '15', rpe: '7–8', description: 'Focus on Negatives', ref : ''},
+        {muscle: 'Bicep', exercise: 'Single-Handed Cable Curl', sets: 3, reps: '10', rpe: '9', description: 'Partials at end, both arms', ref : ''},
+        {muscle: 'Bicep', exercise: 'Double Handed Cable Curl', sets: 3, reps: '15', rpe: '7–8', description: 'Strict form, full ROM', ref : ''}
     ],
     'THU': [
-        {muscle: 'Core', exercise: 'Elevated Double Knee Tuck', sets: 8, reps: '30', rpe: '7–8', notes: 'Rest lats on bench, core focus'},
-        {muscle: 'Core', exercise: 'Declined Crunches', sets: 4, reps: '20', rpe: '7–8', notes: 'Slow eccentric, full contraction'},
-        {muscle: 'Core', exercise: 'Hanging Knee Raises (Side)', sets: 6, reps: '10', rpe: '7–8', notes: 'NA'},
-        {muscle: 'Calves', exercise: 'Standing Barbell Calf Raise', sets: 7, reps: '10–20', rpe: '7–8', notes: 'NA'},
-        {muscle: 'Calves', exercise: 'Seated Calf Raise', sets: 7, reps: '15–20', rpe: '7–8', notes: 'Added exercise for volume'}
+        {muscle: 'Core', exercise: 'Elevated Double Knee Tuck', sets: 8, reps: '30', rpe: '7–8', description: 'Rest lats on bench, core focus', ref : ''},
+        {muscle: 'Core', exercise: 'Declined Crunches', sets: 4, reps: '20', rpe: '7–8', description: 'Slow eccentric, full contraction', ref : ''},
+        {muscle: 'Core', exercise: 'Hanging Knee Raises (Side)', sets: 6, reps: '10', rpe: '7–8', description: 'NA', ref : ''},
+        {muscle: 'Calves', exercise: 'Standing Barbell Calf Raise', sets: 7, reps: '10–20', rpe: '7–8', description: 'NA', ref : ''},
+        {muscle: 'Calves', exercise: 'Seated Calf Raise', sets: 7, reps: '15–20', rpe: '7–8', description: 'Added exercise for volume', ref : ''}
     ],
     'FRI': [
-        {muscle: 'Chest', exercise: 'Flat Barbell Bench Press', sets: 6, reps: '15', rpe: '8–9', notes: 'PR every 3 weeks, added sets'},
-        {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', notes: 'Focus on stretch'},
-        {muscle: 'Chest', exercise: 'Pec Fly', sets: 3, reps: '15', rpe: '7–8', notes: 'Controlled, full ROM'},
-        {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', notes: 'Controlled tempo'},
-        {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', notes: 'Partials at end, both arms'},
-        {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', notes: 'Keep elbows stable'},
-        {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', notes: 'Strict form, full ROM'},
-        {muscle: 'Shoulder', exercise: 'Shoulder Press (Machine/DB)', sets: 3, reps: '10–12', rpe: '7–8', notes: 'Focus on anterior delts'}
+        {muscle: 'Chest', exercise: 'Flat Barbell Bench Press', sets: 6, reps: '15', rpe: '8–9', description: 'PR every 3 weeks, added sets', ref : ''},
+        {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', description: 'Focus on stretch', ref : ''},
+        {muscle: 'Chest', exercise: 'Pec Fly', sets: 3, reps: '15', rpe: '7–8', description: 'Controlled, full ROM', ref : ''},
+        {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', description: 'Controlled tempo', ref : ''},
+        {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', description: 'Partials at end, both arms', ref : ''},
+        {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', description: 'Keep elbows stable', ref : ''},
+        {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', description: 'Strict form, full ROM', ref : ''},
+        {muscle: 'Shoulder', exercise: 'Shoulder Press (Machine/DB)', sets: 3, reps: '10–12', rpe: '7–8', description: 'Focus on anterior delts', ref : ''}
     ],
     'SAT': [
-        {muscle: 'Back', exercise: 'Lat Pulldown', sets: 4, reps: '15', rpe: '7–8', notes: 'Added set, wide grip'},
-        {muscle: 'Back', exercise: 'Bent Barbell Rows', sets: 5, reps: 'To failure', rpe: '9', notes: 'Partials at end, added sets'},
-        {muscle: 'Back', exercise: 'Lat Prayer', sets: 3, reps: '15', rpe: '7–8', notes: 'Last set partials, controlled'},
-        {muscle: 'Back', exercise: 'Lower Partial Deadlifts', sets: 1, reps: 'To failure', rpe: '9', notes: 'High reps'},
-        {muscle: 'Back', exercise: 'Deadlift', sets: 1, reps: '1', rpe: '10', notes: 'PR every 3–4 weeks'},
-        {muscle: 'Bicep', exercise: 'Barbell Curl', sets: 5, reps: '15', rpe: '7–8', notes: 'Focus on contraction'},
-        {muscle: 'Bicep', exercise: 'Single-Handed Cable Curl', sets: 3, reps: '10', rpe: '9', notes: 'Partials at end, both arms'},
-        {muscle: 'Bicep', exercise: 'Preacher Curl', sets: 3, reps: '15', rpe: '7–8', notes: 'Strict form, full ROM'}
+        {muscle: 'Back', exercise: 'Lat Pulldown', sets: 4, reps: '15', rpe: '7–8', description: 'Added set, wide grip', ref : ''},
+        {muscle: 'Back', exercise: 'Bent Barbell Rows', sets: 5, reps: 'To failure', rpe: '9', description: 'Partials at end, added sets', ref : ''},
+        {muscle: 'Back', exercise: 'Lat Prayer', sets: 3, reps: '15', rpe: '7–8', description: 'Last set partials, controlled', ref : ''},
+        {muscle: 'Back', exercise: 'Lower Partial Deadlifts', sets: 1, reps: 'To failure', rpe: '9', description: 'High reps', ref : ''},
+        {muscle: 'Back', exercise: 'Deadlift', sets: 1, reps: '1', rpe: '10', description: 'PR every 3–4 weeks', ref : ''},
+        {muscle: 'Bicep', exercise: 'Barbell Curl', sets: 5, reps: '15', rpe: '7–8', description: 'Focus on contraction', ref : ''},
+        {muscle: 'Bicep', exercise: 'Single-Handed Cable Curl', sets: 3, reps: '10', rpe: '9', description: 'Partials at end, both arms', ref : ''},
+        {muscle: 'Bicep', exercise: 'Preacher Curl', sets: 3, reps: '15', rpe: '7–8', description: 'Strict form, full ROM', ref : ''}
     ]
 };
 
@@ -97,6 +99,18 @@ function selectDay(day) {
 function loadDefaultWorkout() {
     workoutPlan = JSON.parse(JSON.stringify(defaultWorkoutPlan));
     displayWorkout();
+    // Auto-select current day button after loading workout
+    setCurrentDayActive();
+}
+
+// New function to set the current day button as active
+function setCurrentDayActive() {
+    document.querySelectorAll('.day-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent === currentDay) {
+            btn.classList.add('active');
+        }
+    });
 }
 
 function parseWorkoutData(data) {
@@ -118,10 +132,29 @@ function parseWorkoutData(data) {
                 sets: parseInt(row.Sets) || 3,
                 reps: row.Reps || '10',
                 rpe: row.RPE || '7-8',
-                notes: row.Notes || ''
+                description: row.description || '',
+                ref: row.ref || ''
             });
         }
     });
+}
+
+// Helper function to format reference links
+function formatReferenceLink(ref) {
+    if (!ref || ref.trim() === '') {
+        return '';
+    }
+    
+    // Check if it's a URL
+    if (ref.startsWith('http://') || ref.startsWith('https://')) {
+        // Extract filename from URL for display text
+        const filename = ref.split('/').pop().split('?')[0];
+        const displayName = filename.includes('.mp4') ? '🎥 Watch Exercise Video' : '🔗 View Reference';
+        return `<br><a href="${ref}" target="_blank" style="color: #007bff; text-decoration: none; font-weight: 500;">${displayName}</a>`;
+    } else {
+        // If it's not a URL, display as plain text
+        return `<br>Reference: ${ref}`;
+    }
 }
 
 function displayWorkout() {
@@ -171,8 +204,10 @@ function displayWorkout() {
                 </div>
                 <div class="exercise-details">
                     Target: ${exercise.sets} sets × ${exercise.reps} reps | RPE: ${exercise.rpe}
-                    ${exercise.notes ? '<br>Notes: ' + exercise.notes : ''}
-                </div>`;
+                    ${exercise.description ? '<br>Description: ' + exercise.description : ''}
+                    ${formatReferenceLink(exercise.ref)}
+                </div>
+                `;
             
             for (let setNum = 1; setNum <= exercise.sets; setNum++) {
                 const setData = progress[`set${setNum}`] || {};
