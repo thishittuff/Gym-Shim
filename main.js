@@ -42,9 +42,9 @@ const defaultWorkoutPlan = {
         {muscle: 'Bicep', exercise: 'Double Handed Cable Curl', sets: 3, reps: '15', rpe: '7–8', description: 'Strict form, full ROM', ref : ''}
     ],
     'THU': [
-        {muscle: 'Core', exercise: 'Elevated Double Knee Tuck', sets: 8, reps: '30', rpe: '7–8', description: 'Rest lats on bench, core focus', ref : ''},
-        {muscle: 'Core', exercise: 'Declined Crunches', sets: 4, reps: '20', rpe: '7–8', description: 'Slow eccentric, full contraction', ref : ''},
-        {muscle: 'Core', exercise: 'Hanging Knee Raises (Side)', sets: 6, reps: '10', rpe: '7–8', description: 'NA', ref : ''},
+        {muscle: 'Core', exercise: 'Elevated Knee Tuck In (Pike Position)', sets: 5, reps: '15', rpe: '7–8', description: 'Starting in a plank-like position with feet elevated, tuck knees towards the chest, lifting the hips high.', ref : 'https://pyuqhcptlcbxwohevvvv.supabase.co/storage/v1/object/public/workoutvideos/core/Core%20-%20Elevated%20Knee%20Tuck%20In%20-%20Made%20with%20Clipchamp.mp4'},
+        {muscle: 'Core', exercise: 'Hanging Knee Raises', sets: 4, reps: '10', rpe: '7–8', description: 'Bringing the knees up and then twisting the hips/pelvis to the side, engaging the obliques. He mentions lifting the pelvis to the sides for the effective version.', ref : 'https://pyuqhcptlcbxwohevvvv.supabase.co/storage/v1/object/public/workoutvideos/core/Core%20-%20Hanging%20Knee%20Raises%20-%20Made%20with%20Clipchamp.mp4'},
+        {muscle: 'Core', exercise: 'Crunches', sets: 6, reps: '10', rpe: '7–8', description: 'NA', ref : ''},
         {muscle: 'Calves', exercise: 'Standing Barbell Calf Raise', sets: 7, reps: '10–20', rpe: '7–8', description: 'NA', ref : ''},
         {muscle: 'Calves', exercise: 'Seated Calf Raise', sets: 7, reps: '15–20', rpe: '7–8', description: 'Added exercise for volume', ref : ''}
     ],
@@ -362,10 +362,8 @@ let loggedInUserId = null;
 
 async function login() {
     const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
     const statusDiv = document.getElementById('login-status');
     console.log(username);
-    console.log(password);
     statusDiv.textContent = 'Logging in...';
     statusDiv.className = 'status';
 
@@ -375,8 +373,8 @@ async function login() {
         return;
     }
 
-    if (!username || !password) {
-        statusDiv.textContent = 'Please enter both username and password.';
+    if (!username) {
+        statusDiv.textContent = 'Please enter username.';
         statusDiv.className = 'status error';
         return;
     }
@@ -386,8 +384,7 @@ async function login() {
         const { data, error } = await supabaseClient
             .from('workouts')
             .select('user_id, data')
-            .eq('user_id', username)
-            .eq('password', password);
+            .eq('user_id', username);
 
         if (error) {
             console.error('Supabase error:', error);
