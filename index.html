@@ -109,14 +109,15 @@
         .day-btn.active {
             background: linear-gradient(135deg, #580000 0%, #000000 100%);
             color: white;
-            box-shadow: 0 4px 15px rgb(255, 255, 255);
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .workout-container {
             background: white;
             border-radius: 15px;
             padding: 20px;
-            box-shadow: 0 5px 15px rgb(255, 255, 255);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
 
@@ -257,7 +258,7 @@
             font-size: 1rem;
             font-weight: 500;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .btn:hover {
@@ -298,7 +299,7 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
             padding: 20px;
             border-radius: 10px;
             text-align: center;
@@ -336,14 +337,14 @@
             padding: 40px;
             text-align: center;
             margin-bottom: 20px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.05) 100%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
             transition: all 0.3s ease;
             cursor: pointer;
         }
 
         .upload-area:hover {
             border-color: #764ba2;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
         }
 
         .file-input {
@@ -377,7 +378,93 @@
             padding: 40px;
         }
 
+        /* --- NEW: Login UI Enhancements --- */
+        #login-tab.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Adjust min-height if the main header is ever visible with the login form */
+            min-height: calc(100vh - 100px); 
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 450px;
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-box h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+
+        .login-box p {
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .login-input-group {
+            margin-bottom: 20px;
+        }
+
+        .login-box input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .login-box input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-box .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        #login-status {
+            margin-top: 20px;
+            min-height: 24px; /* Reserve space to prevent layout shift */
+            font-weight: 500;
+        }
+        
+        /* Apply existing status styles to the login status div */
+        #login-status.success {
+            color: #28a745;
+        }
+
+        #login-status.error {
+            color: #dc3545;
+        }
+        /* --- End Login UI Enhancements --- */
+
+
         @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
             .container {
                 margin: 0;
                 border-radius: 0;
@@ -387,11 +474,26 @@
             .tab-content {
                 padding: 20px;
             }
+            
+            #login-tab.active {
+                align-items: flex-start;
+                padding-top: 50px;
+            }
+            
+            .login-box {
+                box-shadow: none;
+                padding: 20px;
+            }
 
             .day-selector {
                 justify-content: flex-start;
                 overflow-x: auto;
                 padding-bottom: 10px;
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            .day-selector::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Opera */
             }
 
             .day-btn {
@@ -442,9 +544,10 @@
         </div>
 
         <div id="login-tab" class="tab-content active">
-            <div class="login-form">
-                <h2>Login</h2>
-                <input type="text" id="username" placeholder="Username" required>
+            <div class="login-box">
+                <div class="login-input-group">
+                    <input type="text" id="username" required>
+                </div>
                 <button class="btn" id="login-btn">Login</button>
                 <div id="login-status"></div>
             </div>
