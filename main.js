@@ -49,12 +49,12 @@ const defaultWorkoutPlan = {
         {muscle: 'Calves', exercise: 'Seated Calf Raise', sets: 7, reps: '15–20', rpe: '7–8', description: 'Added exercise for volume', ref : ''}
     ],
     'FRI': [
-        {muscle: 'Chest', exercise: 'Flat Barbell Bench Press', sets: 6, reps: '15', rpe: '8–9', description: 'PR every 3 weeks, added sets', ref : ''},
+        {muscle: 'Chest', exercise: 'Flat Barbell Bench Press', sets: 4, reps: '7-8', rpe: '8–9', description: 'PR every 3 weeks, added sets', ref : ''},
         {muscle: 'Chest', exercise: 'Incline Dumbbell Bench Press', sets: 3, reps: '10', rpe: '7–8', description: 'Focus on stretch', ref : ''},
-        {muscle: 'Chest', exercise: 'Pec Fly', sets: 3, reps: '15', rpe: '7–8', description: 'Controlled, full ROM', ref : ''},
-        {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', description: 'Controlled tempo', ref : ''},
-        {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', description: 'Partials at end, both arms', ref : ''},
-        {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15', rpe: '7–8', description: 'Keep elbows stable', ref : ''},
+        {muscle: 'Chest', exercise: 'Pec Deck Fly / Cable Fly', sets: 3, reps: '15', rpe: '7–8', description: 'Sit with arms extended to the sides. Bring handles together in front of your chest, focusing on squeezing your pecs, not pushing with shoulders', ref : ''},
+        {muscle: 'Chest', exercise: 'Dumble Pullover', sets :3, reps: 15, rpe :'', description: 'Lie perpendicular on a bench, holding one dumbbell with both hands. Lower it behind your head, then pull it back over your chest in a controlled arc.', ref : 'https://pyuqhcptlcbxwohevvvv.supabase.co/storage/v1/object/public/workoutvideos/chest/Chest%20-%20Dumble%20Pullovers.mp4'},
+        {muscle: 'Tricep', exercise: 'Overhead Cable Extension', sets: 3, reps: '15, 12, 10', rpe: '7–8', description: 'Stay close to the Cable with 10-15 degree lean, keep elbows tucked in at the bottom pointing forward and head down, and as you extend flare them out over you head', ref : 'https://pyuqhcptlcbxwohevvvv.supabase.co/storage/v1/object/public/workoutvideos/tricep/Tricep%20-%20%20Overhead%20Cable%20Extension%20-%20Made%20with%20Clipchamp.mp4'},
+        {muscle: 'Tricep', exercise: 'Single-Handed Cable Kick Back', sets: 3, reps: 'To failure', rpe: '9', description: 'Partials at end, both arms', ref : ''},
         {muscle: 'Tricep', exercise: 'Skull Crushers', sets: 3, reps: '10–12', rpe: '8', description: 'Strict form, full ROM', ref : ''},
         {muscle: 'Shoulder', exercise: 'Shoulder Press (Machine/DB)', sets: 3, reps: '10–12', rpe: '7–8', description: 'Focus on anterior delts', ref : ''}
     ],
@@ -194,6 +194,22 @@ function displayWorkout() {
             const exerciseKey = `${currentDay}-${muscle}-${exerciseIndex}`;
             const progress = workoutProgress[exerciseKey] || {};
 
+            // Special case for FRI Dumble Pullover
+            if (
+                currentDay === 'FRI' &&
+                exercise.exercise === 'Dumble Pullover'
+            ) {
+                html += `<div class="exercise-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 30px 0;">
+                    <div class="exercise-header">
+                        <div class="exercise-name"><b>Exercise END</b> <br> ${exercise.exercise}</div>
+                    </div>
+                    <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+                        <video src="${exercise.ref}" controls loop autoplay muted style="max-width:350px; max-height:250px; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.12);"></video>
+                    </div>
+                </div>`;
+                return; // Skip normal rendering for this exercise
+            }
+
             // Find previous workout for this exercise
             let prevExercise = prevDayData.find(e => e.muscle === muscle && e.exercise === exercise.exercise);
             let prevSets = prevExercise && prevExercise.sets ? prevExercise.sets : {};
@@ -204,7 +220,7 @@ function displayWorkout() {
                 </div>
                 <div class="exercise-details">
                     Target: ${exercise.sets} sets × ${exercise.reps} reps | RPE: ${exercise.rpe}
-                    ${exercise.description ? '<br>Description: ' + exercise.description : ''}
+                    ${exercise.description ? '<br>Description: ' + '<b>' + exercise.description + '</b>' : ''}
                     ${formatReferenceLink(exercise.ref)}
                 </div>
                 `;
@@ -251,7 +267,7 @@ function displayWorkout() {
                     <div class="set-status">
                         <button class="complete-btn ${isCompleted ? 'completed' : ''}" 
                                 onclick="toggleSetComplete('${exerciseKey}', ${setNum})">
-                            ${isCompleted ? '✓' : '○'}
+                            ${isCompleted ? '✓' : 'O'}
                         </button>
                     </div>
                 </div>`;
