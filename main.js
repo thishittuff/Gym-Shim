@@ -204,7 +204,17 @@ function displayWorkout() {
                         <div class="exercise-name"><b>Exercise END</b> <br> ${exercise.exercise}</div>
                     </div>
                     <div style="width:100%; display:flex; justify-content:center; align-items:center;">
-                        <video src="${exercise.ref}" controls loop autoplay muted style="max-width:350px; max-height:250px; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.12);"></video>
+                        <video 
+                            src="${exercise.ref}" 
+                            controls 
+                            loop 
+                            muted 
+                            playsinline
+                            preload="metadata"
+                            style="max-width:350px; max-height:250px; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.12);"
+                            onloadedmetadata="this.play().catch(e => console.log('Autoplay prevented:', e))"
+                            onclick="this.paused ? this.play() : this.pause()"
+                        ></video>
                     </div>
                 </div>`;
                 return; // Skip normal rendering for this exercise
