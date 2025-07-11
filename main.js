@@ -7,18 +7,22 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 let currentDay = days[new Date().getDay()];
 let workoutPlan = {};
-let workoutProgress = {};
+let workoutProgress = {}; // This will hold in-progress data
 
 // Default workout plan
 let previousWorkout = {};
 let hasPreviousWorkout = false; // Track if user has previous workout data
 let hasPersonalizedWorkout = false;
 
+// State management variables
+let isLoggedIn = false;
+let loggedInUserId = null;
+
 const defaultWorkoutPlan = {
     'MON': [
-        {muscle: 'Leg', exercise: 'Leg Extension', sets: 5, reps: '20–25, 30', rpe: '8–9', description: 'Last set 30 reps, focus on squeeze', ref : ''},
         {muscle: 'Leg', exercise: 'Leg Curl', sets: 5, reps: '20, 30', rpe: '7–8', description: 'Last set 30 reps, slow eccentric', ref : ''},
         {muscle: 'Leg', exercise: 'Barbell Squat', sets: 5, reps: '15–20', rpe: '7–8', description: 'Narrow stance, PR every 3 weeks', ref : ''},
+        {muscle: 'Leg', exercise: 'Leg Extension', sets: 5, reps: '20–25, 30', rpe: '8–9', description: 'Last set 30 reps, focus on squeeze', ref : ''},
         {muscle: 'Tricep', exercise: 'Cable Pushdown', sets: 3, reps: '15, 12, 10', rpe: '7–8', description: 'Controlled tempo, full ROM', ref : ''},
         {muscle: 'Bicep', exercise: 'Spider Curls', sets: 3, reps: '8,10,8', rpe: '7–8', description: 'Flat Bench Laying down', ref : ''},
         {muscle: 'Tricep', exercise: 'Single-Handed Cable Push', sets: 3, reps: 'To failure', rpe: '9', description: 'Partials at end, both arms', ref : ''},
@@ -71,26 +75,18 @@ const defaultWorkoutPlan = {
     ]
 };
 
+// --- UI AND WORKOUT DISPLAY FUNCTIONS ---
+
 function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
     document.getElementById(tabName + '-tab').classList.add('active');
     event.target.classList.add('active');
-
-    if (tabName === 'progress') {
-        updateProgressStats();
-    }
 }
 
 function selectDay(day) {
     currentDay = day;
-    document.querySelectorAll('.day-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     displayWorkout();
 }
@@ -102,12 +98,10 @@ function loadDefaultWorkout() {
 }
 
 function loadPersonalizedWorkout(personalizedData) {
-    workoutPlan = {}
+    workoutPlan = {};
     personalizedData.forEach(row => {
         const day = row.day;
-        if (!workoutPlan[day]) {
-            workoutPlan[day] = [];
-        }
+        if (!workoutPlan[day]) workoutPlan[day] = [];
         workoutPlan[day].push({
             muscle: row.muscle || '',
             exercise: row.exercise,
@@ -125,17 +119,14 @@ function loadPersonalizedWorkout(personalizedData) {
 function setCurrentDayActive() {
     document.querySelectorAll('.day-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.textContent === currentDay) {
-            btn.classList.add('active');
-        }
+        if (btn.textContent === currentDay) btn.classList.add('active');
     });
 }
 
 function formatReferenceLink(ref) {
     if (!ref || ref.trim() === '') return '';
     if (ref.startsWith('http://') || ref.startsWith('https://')) {
-        const displayName = '🎥 Watch Exercise Video';
-        return `<br><a href="${ref}" target="_blank" style="color: #007bff; text-decoration: none; font-weight: 500;">${displayName}</a>`;
+        return `<br><a href="${ref}" target="_blank" style="color: #007bff; text-decoration: none; font-weight: 500;">🎥 Watch Exercise Video</a>`;
     }
     return `<br>Reference: ${ref}`;
 }
@@ -152,14 +143,13 @@ function displayWorkout() {
     const groupedExercises = groupByMuscle(exercises);
     const prevDayData = previousWorkout[currentDay] || [];
 
-    Object.keys(groupedExercises).forEach(muscle => {
-        html += `<div class="exercise-group">
-            <div class="muscle-header">💪 ${muscle}</div>`;
+    for (const muscle in groupedExercises) {
+        html += `<div class="exercise-group"><div class="muscle-header">💪 ${muscle}</div>`;
         groupedExercises[muscle].forEach((exercise, exerciseIndex) => {
             const exerciseKey = `${currentDay}-${muscle}-${exerciseIndex}`;
             const progress = workoutProgress[exerciseKey] || {};
             let prevExercise = prevDayData.find(e => e.muscle === muscle && e.exercise === exercise.exercise);
-            let prevSets = prevExercise && prevExercise.sets ? prevExercise.sets : {};
+            let prevSets = prevExercise?.sets || {};
 
             html += `<div class="exercise-item">
                 <div class="exercise-header"><div class="exercise-name">${exercise.exercise}</div></div>
@@ -172,7 +162,7 @@ function displayWorkout() {
             for (let setNum = 1; setNum <= exercise.sets; setNum++) {
                 const setData = progress[`set${setNum}`] || {};
                 const isCompleted = setData.completed || false;
-                let prevSet = prevSets[`set${setNum}`] || null;
+                let prevSet = prevSets[`set${setNum}`];
                 let prevSetHtml = '';
                 if (hasPreviousWorkout && prevSet) {
                     prevSetHtml = `<div style='font-size:0.9em; color:#888; margin-bottom:2px;'>
@@ -196,7 +186,7 @@ function displayWorkout() {
             html += `</div>`;
         });
         html += `</div>`;
-    });
+    }
 
     container.innerHTML = html;
     const submitBtn = document.createElement('button');
@@ -214,16 +204,28 @@ function groupByMuscle(exercises) {
     }, {});
 }
 
+// --- DATA HANDLING AND STATE UPDATES ---
+
 function updateSet(exerciseKey, setNum, field, value) {
     workoutProgress[exerciseKey] = workoutProgress[exerciseKey] || {};
     workoutProgress[exerciseKey][`set${setNum}`] = workoutProgress[exerciseKey][`set${setNum}`] || {};
     workoutProgress[exerciseKey][`set${setNum}`][field] = value;
+
+    // Save progress to localStorage on every input change
+    if (loggedInUserId) {
+        localStorage.setItem(`gymapp_progress_${loggedInUserId}`, JSON.stringify(workoutProgress));
+    }
 }
 
 function toggleSetComplete(exerciseKey, setNum) {
     workoutProgress[exerciseKey] = workoutProgress[exerciseKey] || {};
     workoutProgress[exerciseKey][`set${setNum}`] = workoutProgress[exerciseKey][`set${setNum}`] || {};
     workoutProgress[exerciseKey][`set${setNum}`].completed = !workoutProgress[exerciseKey][`set${setNum}`].completed;
+
+    // Also save this progress change to localStorage
+    if (loggedInUserId) {
+        localStorage.setItem(`gymapp_progress_${loggedInUserId}`, JSON.stringify(workoutProgress));
+    }
     displayWorkout();
 }
 
@@ -248,38 +250,77 @@ function buildPreviousWorkoutFromProgress() {
     return result;
 }
 
-let isLoggedIn = false;
-let loggedInUserId = null;
+// --- SESSION MANAGEMENT & LOGIN/LOGOUT ---
 
-async function fetchPersonalizedWorkout(userId) {
+function setSession(userId, isGuest) {
+    localStorage.setItem('gymapp_session', JSON.stringify({ userId, isGuest }));
+}
+
+function getSession() {
     try {
-        // Corrected to handle user arrays in the 'USER' column
-        const { data, error } = await supabaseClient
-            .from('personalized_workouts')
-            .select('*')
-            .order('id', { ascending: true });
-
-        if (error) {
-            console.error('Error fetching personalized workouts:', error);
-            return null;
-        }
-        
-        // Filter workouts locally since Supabase `.eq` doesn't work directly on array columns as needed here
-        return data.filter(workout => {
-            // Assuming USER column is like '{Adhi,Angad}'
-            if (typeof workout.USER === 'string') {
-                const users = workout.USER.replace(/[{}]/g, '').split(',');
-                return users.includes(userId);
-            }
-            return false;
-        });
-
-    } catch (error) {
-        console.error('Exception in fetchPersonalizedWorkout:', error);
+        return JSON.parse(localStorage.getItem('gymapp_session'));
+    } catch {
         return null;
     }
 }
 
+function clearSession() {
+    localStorage.removeItem('gymapp_session');
+}
+
+function showLogoutButton(show) {
+    const logoutContainer = document.getElementById('logout-container');
+    if (logoutContainer) logoutContainer.style.display = show ? 'block' : 'none';
+}
+
+function logout() {
+    // Clear any lingering progress for the user logging out
+    if (loggedInUserId) {
+        localStorage.removeItem(`gymapp_progress_${loggedInUserId}`);
+    }
+
+    isLoggedIn = false;
+    loggedInUserId = null;
+    hasPreviousWorkout = false;
+    hasPersonalizedWorkout = false;
+    previousWorkout = {};
+    workoutPlan = {};
+    workoutProgress = {};
+
+    clearSession();
+    document.getElementById('tabs').style.display = 'none';
+    document.getElementById('workout-tab').classList.remove('active');
+    document.getElementById('login-tab').classList.add('active');
+    showLogoutButton(false);
+}
+
+async function guestLogin() {
+    isLoggedIn = true;
+    loggedInUserId = 'guest';
+    hasPreviousWorkout = false;
+    hasPersonalizedWorkout = false;
+    previousWorkout = {};
+    workoutProgress = {}; // Reset before loading
+    setSession('guest', true);
+
+    // Load any saved guest progress from localStorage
+    const savedProgress = localStorage.getItem(`gymapp_progress_guest`);
+    if (savedProgress) {
+        try {
+            workoutProgress = JSON.parse(savedProgress);
+        } catch (e) {
+            console.error("Error parsing saved guest progress:", e);
+            workoutProgress = {};
+        }
+    }
+
+    loadDefaultWorkout();
+    document.getElementById('login-tab').classList.remove('active');
+    document.getElementById('workout-tab').classList.add('active');
+    document.getElementById('tabs').style.display = 'flex';
+    showLogoutButton(true);
+    document.getElementById('login-status').textContent = '';
+}
 
 async function login() {
     const username = document.getElementById('username').value.trim();
@@ -295,7 +336,6 @@ async function login() {
 
     try {
         const { data, error } = await supabaseClient.from('workouts').select('user_id, data').eq('user_id', username);
-
         if (error) throw error;
         if (!data || data.length === 0) {
             statusDiv.textContent = 'Invalid username.';
@@ -306,13 +346,26 @@ async function login() {
         const user = data[0];
         isLoggedIn = true;
         loggedInUserId = user.user_id;
+        setSession(loggedInUserId, false);
+
+        // Load saved progress from localStorage BEFORE loading workout plan
+        const savedProgress = localStorage.getItem(`gymapp_progress_${loggedInUserId}`);
+        if (savedProgress) {
+            try {
+                workoutProgress = JSON.parse(savedProgress);
+            } catch (e) {
+                console.error("Error parsing saved progress:", e);
+                workoutProgress = {}; // Reset on error
+            }
+        }
+
         statusDiv.textContent = 'Login successful! Loading your data...';
         statusDiv.className = 'status success';
 
         if (user.data) {
             try {
                 previousWorkout = typeof user.data === 'string' ? JSON.parse(user.data) : user.data;
-                hasPreviousWorkout = Object.keys(previousWorkout).some(day => previousWorkout[day] && previousWorkout[day].length > 0);
+                hasPreviousWorkout = Object.keys(previousWorkout).some(day => previousWorkout[day]?.length > 0);
             } catch (e) {
                 console.error('Error parsing previous workout data:', e);
                 hasPreviousWorkout = false;
@@ -338,7 +391,7 @@ async function login() {
         document.getElementById('workout-tab').classList.add('active');
         document.getElementById('tabs').style.display = 'flex';
         document.getElementById('username').value = '';
-
+        showLogoutButton(true);
     } catch (error) {
         console.error('Login error:', error);
         statusDiv.textContent = 'Login failed. Please try again.';
@@ -346,9 +399,31 @@ async function login() {
     }
 }
 
+async function fetchPersonalizedWorkout(userId) {
+    try {
+        const { data, error } = await supabaseClient.from('personalized_workouts').select('*').order('id', { ascending: true });
+        if (error) {
+            console.error('Error fetching personalized workouts:', error);
+            return null;
+        }
+        return data.filter(workout => {
+            if (typeof workout.USER === 'string') {
+                const users = workout.USER.replace(/[{}]/g, '').split(',');
+                return users.includes(userId);
+            }
+            return false;
+        });
+    } catch (error) {
+        console.error('Exception in fetchPersonalizedWorkout:', error);
+        return null;
+    }
+}
+
+// --- DATA SUBMISSION ---
+
 async function saveWorkoutToDatabase() {
-    if (!isLoggedIn || !loggedInUserId) {
-        alert('Please log in first.');
+    if (!isLoggedIn || !loggedInUserId || loggedInUserId === 'guest') {
+        alert('Please log in with a username to save data.');
         return;
     }
 
@@ -360,8 +435,15 @@ async function saveWorkoutToDatabase() {
             .eq('user_id', loggedInUserId);
 
         if (error) throw error;
+        
         alert('Workout data saved successfully!');
-        hasPreviousWorkout = true; // Data is now saved
+        hasPreviousWorkout = true;
+
+        // Clear the temporary progress from localStorage and memory
+        localStorage.removeItem(`gymapp_progress_${loggedInUserId}`);
+        workoutProgress = {};
+        displayWorkout(); // Refresh the view to show empty fields
+
     } catch (error) {
         console.error('Save error:', error);
         alert('Failed to save workout data.');
@@ -369,16 +451,17 @@ async function saveWorkoutToDatabase() {
 }
 
 function submitWorkoutData() {
-    if (isLoggedIn) {
+    if (isLoggedIn && loggedInUserId !== 'guest') {
         saveWorkoutToDatabase();
     } else {
-        // Fallback for non-logged-in users: download JSON
+        // Fallback for guest users: download JSON
+        alert("As a guest, your workout will be downloaded as a JSON file. Log in to save to the cloud.");
         const data = buildPreviousWorkoutFromProgress();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'data.json';
+        a.download = 'workout_data.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -386,9 +469,26 @@ function submitWorkoutData() {
     }
 }
 
+// --- INITIALIZATION ---
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('login-btn').addEventListener('click', login);
+    document.getElementById('guest-btn')?.addEventListener('click', guestLogin);
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+
     document.getElementById('login-tab').classList.add('active');
     document.getElementById('workout-tab').classList.remove('active');
     document.getElementById('tabs').style.display = 'none';
+    showLogoutButton(false);
+
+    // Auto-login if session exists
+    const session = getSession();
+    if (session && session.userId) {
+        if (session.isGuest) {
+            guestLogin();
+        } else {
+            document.getElementById('username').value = session.userId;
+            login();
+        }
+    }
 });
