@@ -14,6 +14,9 @@ let previousWorkout = {};
 let hasPreviousWorkout = false;
 let hasPersonalizedWorkout = false;
 
+// Set visibility state (tracks expanded exercises by exerciseKey)
+let expandedExercises = new Set();
+
 // State management
 let isLoggedIn = false;
 let loggedInUserId = null;
@@ -127,9 +130,18 @@ function setCurrentDayActive() {
 function formatReferenceLink(ref) {
     if (!ref || ref.trim() === '') return '';
     if (ref.startsWith('http://') || ref.startsWith('https://')) {
-        return `<br><a href="${ref}" target="_blank" style="color: #007bff; text-decoration: none; font-weight: 500;">🎥 Watch Exercise Video</a>`;
+        return `<br><a href="${ref}" target="_blank" class="video-link">🎥 Watch Exercise Video</a>`;
     }
     return `<br>Reference: ${ref}`;
+}
+
+function toggleExerciseSets(exerciseKey) {
+    if (expandedExercises.has(exerciseKey)) {
+        expandedExercises.delete(exerciseKey);
+    } else {
+        expandedExercises.add(exerciseKey);
+    }
+    displayWorkout();
 }
 
 function displayWorkout() {
@@ -151,12 +163,12 @@ function displayWorkout() {
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number" id="stat-completed-sets">${dayStats.completedSets} / ${dayStats.totalSets}</div>
-                    <div class="stat-label">Sets completed</div>
+                    <div class="stat-label">Sets Completed</div>
                     <div class="progress-bar"><div class="progress-fill" id="stat-progress-fill" style="width:${dayStats.completionPct}%"></div></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="stat-total-volume">${dayStats.totalVolume}</div>
-                    <div class="stat-label">Total volume (kg·reps)</div>
+                    <div class="stat-label">Total Volume (kg·reps)</div>
                 </div>
             </div>
         </div>`;
@@ -165,17 +177,33 @@ function displayWorkout() {
         html += `<div class="exercise-group"><div class="muscle-header">💪 ${muscle}</div>`;
         groupedExercises[muscle].forEach((exercise, exerciseIndex) => {
             const exerciseKey = `${currentDay}-${muscle}-${exerciseIndex}`;
+            const isExpanded = expandedExercises.has(exerciseKey);
             const progress = workoutProgress[exerciseKey] || {};
             let prevExercise = prevDayData.find(e => e.muscle === muscle && e.exercise === exercise.exercise);
             let prevSets = prevExercise?.sets || {};
 
-            html += `<div class="exercise-item">
-                <div class="exercise-header"><div class="exercise-name">${exercise.exercise}</div></div>
+            // Calculate how many sets are finished for this specific exercise
+            let completedCount = 0;
+            for (let i = 1; i <= exercise.sets; i++) {
+                if (progress[`set${i}`]?.completed) completedCount++;
+            }
+
+            html += `<div class="exercise-item ${isExpanded ? 'expanded' : ''}">
+                <div class="exercise-header" onclick="toggleExerciseSets('${exerciseKey}')">
+                    <div class="exercise-title-group">
+                        <span class="dropdown-arrow">${isExpanded ? '▼' : '▶'}</span>
+                        <div class="exercise-name">${exercise.exercise}</div>
+                    </div>
+                    <div class="exercise-badge">${completedCount}/${exercise.sets} sets</div>
+                </div>
+                
                 <div class="exercise-details">
                     Target: ${exercise.sets} sets × ${exercise.reps} reps | RPE: ${exercise.rpe}
                     ${exercise.description ? '<br>Description: <b>' + exercise.description + '</b>' : ''}
                     ${formatReferenceLink(exercise.ref)}
-                </div>`;
+                </div>
+
+                <div class="sets-wrapper ${isExpanded ? 'show' : 'hidden'}">`;
 
             for (let setNum = 1; setNum <= exercise.sets; setNum++) {
                 const setData = progress[`set${setNum}`] || {};
@@ -183,8 +211,8 @@ function displayWorkout() {
                 let prevSet = prevSets[`set${setNum}`];
                 let prevSetHtml = '';
                 if (hasPreviousWorkout && prevSet) {
-                    prevSetHtml = `<div style='font-size:0.9em; color:#888; margin-bottom:2px;'>
-                        Previous: <b>${prevSet[0] || '-'} kg / ${prevSet[1] || '-'} reps${prevSet[2] ? ' / RPE ' + prevSet[2] : ''}</b>
+                    prevSetHtml = `<div class="previous-log">
+                        Prev: <b>${prevSet[0] || '-'} kg / ${prevSet[1] || '-'} reps${prevSet[2] ? ' / RPE ' + prevSet[2] : ''}</b>
                     </div>`;
                 }
 
@@ -198,7 +226,7 @@ function displayWorkout() {
                                 <input type="number" class="set-input ${isCompleted ? 'completed' : ''}" value="${setData.reps || ''}" oninput="updateSet('${exerciseKey}', ${setNum}, 'reps', this.value)" onchange="updateSet('${exerciseKey}', ${setNum}, 'reps', this.value)">
                             </div>
                             <div class="input-group">
-                                <div class="input-label">Weight</div>
+                                <div class="input-label">Weight (kg)</div>
                                 <input type="number" step="0.5" class="set-input ${isCompleted ? 'completed' : ''}" value="${setData.weight || ''}" oninput="updateSet('${exerciseKey}', ${setNum}, 'weight', this.value)" onchange="updateSet('${exerciseKey}', ${setNum}, 'weight', this.value)">
                             </div>
                             <div class="input-group">
@@ -210,7 +238,7 @@ function displayWorkout() {
                     <div class="set-status"><button class="complete-btn ${isCompleted ? 'completed' : ''}" onclick="toggleSetComplete('${exerciseKey}', ${setNum})">${isCompleted ? '✓' : 'O'}</button></div>
                 </div>`;
             }
-            html += `</div>`;
+            html += `</div></div>`;
         });
         html += `</div>`;
     }
@@ -350,6 +378,7 @@ function logout() {
     previousWorkout = {};
     workoutPlan = {};
     workoutProgress = {};
+    expandedExercises.clear();
 
     clearSession();
     document.getElementById('tabs').style.display = 'none';
@@ -499,11 +528,9 @@ async function saveWorkoutToDatabase() {
         
         alert('Workout data saved successfully!');
         
-        // Update in-memory previous workout to the newly saved state
         previousWorkout = workoutData;
         hasPreviousWorkout = true;
 
-        // Clear active session progress and refresh view
         localStorage.removeItem(`gymapp_progress_${loggedInUserId}`);
         workoutProgress = {};
         displayWorkout();
