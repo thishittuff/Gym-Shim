@@ -78,6 +78,49 @@ const defaultWorkoutPlan = {
     ]
 };
 
+// --- DARK VARIANTS THEME SYSTEM ---
+
+const THEMES = [
+    { id: 'theme-dark-crimson', name: '🔴 Crimson' },
+    { id: 'theme-dark-teal', name: '🩵 Cyber Teal' },
+    { id: 'theme-dark-olive', name: '🟢 Dark Olive' },
+    { id: 'theme-dark-purple', name: '🟣 Royal Purple' },
+    { id: 'theme-dark-gold', name: '🟡 Midnight Gold' }
+];
+
+let currentThemeIndex = 0;
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('gymapp_theme') || 'theme-dark-crimson';
+    let index = THEMES.findIndex(t => t.id === savedTheme);
+    if (index === -1) index = 0;
+    applyTheme(index);
+}
+
+function applyTheme(index) {
+    currentThemeIndex = index;
+    const theme = THEMES[currentThemeIndex];
+    
+    THEMES.forEach(t => document.body.classList.remove(t.id));
+    document.body.classList.add(theme.id);
+    localStorage.setItem('gymapp_theme', theme.id);
+    
+    updateThemeButtonText();
+}
+
+function cycleTheme() {
+    const nextIndex = (currentThemeIndex + 1) % THEMES.length;
+    applyTheme(nextIndex);
+}
+
+function updateThemeButtonText() {
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        const theme = THEMES[currentThemeIndex];
+        btn.textContent = `🎨 ${theme.name}`;
+    }
+}
+
 // --- UI & TAB FUNCTIONS ---
 
 function switchTab(tabName, clickedTab) {
@@ -182,7 +225,7 @@ function displayWorkout() {
             let prevExercise = prevDayData.find(e => e.muscle === muscle && e.exercise === exercise.exercise);
             let prevSets = prevExercise?.sets || {};
 
-            // Calculate how many sets are finished for this specific exercise
+            // Calculate completed sets count
             let completedCount = 0;
             for (let i = 1; i <= exercise.sets; i++) {
                 if (progress[`set${i}`]?.completed) completedCount++;
@@ -608,6 +651,11 @@ function resetProgressForCurrentDay() {
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize dark theme variant state
+    initTheme();
+
+    // Event listeners
+    document.getElementById('theme-toggle-btn')?.addEventListener('click', cycleTheme);
     document.getElementById('login-btn').addEventListener('click', login);
     document.getElementById('guest-btn')?.addEventListener('click', guestLogin);
     document.getElementById('logout-btn')?.addEventListener('click', logout);
